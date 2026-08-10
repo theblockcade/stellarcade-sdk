@@ -36,7 +36,9 @@ describe("pollTxStatus", () => {
   it("throws TxTimeoutError when the deadline elapses", async () => {
     globalThis.fetch = vi
       .fn()
-      .mockResolvedValue(new Response(JSON.stringify({ hash: "abc", status: "pending" }), { status: 200 })) as unknown as typeof fetch;
+      .mockImplementation(
+        async () => new Response(JSON.stringify({ hash: "abc", status: "pending" }), { status: 200 }),
+      ) as unknown as typeof fetch;
 
     await expect(
       pollTxStatus("https://gateway.example.com", "abc", { timeoutMs: 5, intervalMs: 2 }),
