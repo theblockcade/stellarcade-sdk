@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import matter from "gray-matter";
-import { DOCS_REGISTRY, type DocEntry } from "./docs-registry.js";
+import { DOCS_REGISTRY, type DocEntry } from "./docs-registry";
 
 const CONTENT_DIR = path.join(process.cwd(), "content", "docs");
 

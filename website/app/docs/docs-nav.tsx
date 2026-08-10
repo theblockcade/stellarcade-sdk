@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import type { DocEntry } from "../../lib/docs-registry.js";
+import type { DocEntry } from "../../lib/docs-registry";
 
 export function DocsNav({ entries }: { entries: DocEntry[] }) {
   const pathname = usePathname();

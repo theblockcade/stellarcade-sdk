@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { getSortedRegistry } from "../../lib/docs.js";
-import { DocsNav } from "./docs-nav.js";
+import { getSortedRegistry } from "../../lib/docs";
+import { DocsNav } from "./docs-nav";
 
 export default function DocsLayout({ children }: { children: ReactNode }) {
   const entries = getSortedRegistry();

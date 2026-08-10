@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getAdjacent } from "../../../lib/docs-registry.js";
-import { getAllDocSlugs, getDocPage } from "../../../lib/docs.js";
-import { Markdown } from "../markdown.js";
+import { getAdjacent } from "../../../lib/docs-registry";
+import { getAllDocSlugs, getDocPage } from "../../../lib/docs";
+import { Markdown } from "../markdown";
 
 export function generateStaticParams() {
   return getAllDocSlugs().map((slug) => ({ slug }));
