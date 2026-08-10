@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import { NotConnectedError } from "./errors.js";
 import { FreighterConnector } from "./freighter-connector.js";
 
@@ -6,7 +6,6 @@ describe("FreighterConnector", () => {
   const originalWindow = globalThis.window;
 
   afterEach(() => {
-    // @ts-expect-error test cleanup
     globalThis.window = originalWindow;
   });
 
