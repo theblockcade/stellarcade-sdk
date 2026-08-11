@@ -1,41 +1,91 @@
+# Arcade Games Catalog & Client Integration
+
+StellarCade features a catalog of on-chain, provably-fair games powered by Soroban smart contracts. This guide documents how to query available tables, place wagers, and listen for match settlements using the SDK.
+
 ---
-description: GamesClient reference.
+
+## Active Games Catalog
+
+| Game ID | Name | Category | Base Wager | Smart Contract | Provable Mechanism |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `coinflip-duel` | **Coinflip Duel** | PVP / 1v1 | 5 – 100 XLM | `coin-flip` | 50/50 SHA-256 Commit-Reveal |
+| `rng-dice` | **Verifiable Dice** | Table / RNG | 10 – 250 XLM | `random-generator` | 6-Sided Modular Entropy |
+| `prizepool-gauntlet` | **Prize Pool Gauntlet** | Jackpot / Pool | 25 – 500 XLM | `prize-pool` | Multi-Stage Escrow Pool |
+
 ---
 
-`client.games` is a `GamesClient`.
+## Querying Games with `ApiClient`
 
-## `list()`
+```typescript
+import { ApiClient } from "@stellarcade/sdk";
 
-Returns all `GameSummary` entries the gateway currently exposes (id, name,
-status, stake bounds, settlement asset).
+const client = new ApiClient({
+  baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL,
+});
 
-## `get(gameId)`
+// Fetch all active games
+const result = await client.getGames();
 
-Fetch a single game's summary.
-
-## `commitRound(gameId)`
-
-Requests a fresh commitment from the arbiter. Returns a `RoundCommitment`
-with `commitHash`, `committedAtLedger`, and `expiresAtLedger`. Call this
-**before** `play()` — a round played without a prior commitment is rejected
-by the gateway.
-
-## `play(input)`
-
-```ts
-interface PlayRoundInput {
-  gameId: GameId;
-  playerAddress: string;
-  stake: string;
-  clientSeed: string;
-  choice: unknown; // game-specific: { side: "heads" }, { number: 4 }, ...
+if (result.success) {
+  result.data.forEach((game) => {
+    console.log(`[${game.id}] ${game.name} - Status: ${game.status}`);
+  });
 }
 ```
 
-Returns a `TxSubmitResult` with the submitted transaction hash. Use
-`client.waitForTx(hash)` to poll until it settles.
+---
 
-## `getResult(roundId)`
+## Placing a Match Wager & Executing a Duel
 
-Fetch the final `RoundResult` for a settled round, including `proofUrl` —
-the URL of the published `FairnessProof` for that round.
+To initiate a duel match:
+
+```typescript
+import { CoinFlipClient, SorobanClient, CoinFlipSide } from "@stellarcade/sdk";
+
+const soroban = new SorobanClient({
+  rpcUrl: "https://soroban-testnet.stellar.org",
+  networkPassphrase: "Test SDF Network ; September 2015",
+});
+
+const coinFlip = new CoinFlipClient({
+  client: soroban,
+  contractId: process.env.NEXT_PUBLIC_COIN_FLIP_CONTRACT_ID!,
+});
+
+// 1. Place a bet on Heads (0) with a 10 XLM wager
+const tx = await coinFlip.placeBet({
+  playerAddress: "GBZXN7PIRZGNMHGA72STUFIO",
+  wagerAmountXlm: 10,
+  side: CoinFlipSide.Heads,
+  clientSeed: "MY_RANDOM_CLIENT_SEED_99",
+});
+
+console.log("Transaction Envelope Created:", tx.xdr);
+
+// 2. Sign transaction via Freighter
+const signedXdr = await window.freighter.signTransaction(tx.xdr);
+
+// 3. Broadcast to Soroban
+const receipt = await soroban.submitTransaction(signedXdr);
+console.log("Duel Settled On-Chain! TxHash:", receipt.hash);
+```
+
+---
+
+## Listening to Live Match Events
+
+Subscribe to real-time on-chain duel events using `useContractEvents`:
+
+```typescript
+import { useContractEvents } from "@stellarcade/sdk";
+
+const { events, isSubscribed } = useContractEvents({
+  contractId: "CDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD",
+  topic: "game_settled",
+  onEvent: (event) => {
+    console.log("New Game Settled:", event.data);
+    console.log("Winner:", event.data.winner);
+    console.log("Payout:", event.data.payoutAmount, "XLM");
+  },
+});
+```

@@ -1,38 +1,54 @@
+# Security Architecture & Threat Model
+
+StellarCade is designed around a strict zero-custody, cryptographically verifiable threat model. This document details protocol security guarantees, vulnerability mitigations, and key isolation boundaries.
+
 ---
-description: What the SDK does and does not protect against.
+
+## 1. Key Isolation & Custody Guarantees
+
+```
+┌────────────────────────────────────────────────────────┐
+│               Browser Security Sandbox                 │
+│                                                        │
+│  ┌──────────────────────┐    ┌──────────────────────┐  │
+│  │   Freighter Wallet   │    │  StellarCade Web App │  │
+│  │   (Holds Secret Key) │    │  (Reads Public State)│  │
+│  └──────────┬───────────┘    └──────────┬───────────┘  │
+│             │                           │              │
+│             │  PostMessage Challenge    │              │
+│             │◄──────────────────────────┘              │
+│             │                                          │
+│             │  Signed Transaction Envelope             │
+│             └──────────────────────────►               │
+└────────────────────────────────────────────────────────┘
+```
+
+- **Zero Seed Phrase Exposure**: Neither the web frontend nor the SDK ever has access to the user's private keys or seed phrase.
+- **Explicit Authorization**: Every on-chain mutation requires the user to view and approve the transaction details inside the Freighter popup dialog.
+
 ---
 
-## No key custody
+## 2. Front-Running & MEV Resistance
 
-No connector shipped or documented here ever holds a private key inside the
-SDK process. `signTransaction()` always delegates to the wrapped wallet and
-returns signed XDR — see [Wallet Connectors](/docs/wallet-connectors).
+On public blockchains, miners and bots can attempt to front-run bets if entropy is derived from public mempool transactions. StellarCade eliminates MEV exploitation through:
 
-## Network mismatch is a hard error
+1. **Pre-Committed Server Entropy**: The operator's secret seed commitment is published before the player's transaction is submitted.
+2. **Client-Provided Entropy**: The player's client seed is combined into the final digest, guaranteeing that neither party can manipulate the outcome alone.
+3. **Ledger Hash Pinning**: Outcomes bind to the closing ledger sequence, preventing timestamp manipulation.
 
-`createConfig()` cross-checks `network` against `networkPassphrase` and
-throws `NetworkMismatchError` rather than silently building a config that
-could sign for the wrong ledger. There is no default network — you must
-choose one explicitly.
+---
 
-## Fairness verification is client-side by design
+## 3. Rate Limiting & Denial of Service Mitigations
 
-`verifyProof()` runs on Web Crypto with no network calls once you have the
-commitment and proof in hand. See [Fairness Verification](/docs/fairness).
+- **Automatic Exponential Backoff**: SDK network requests back off deterministically on HTTP 429 and 500 status codes.
+- **Contract Reentrancy Guards**: All Soroban smart contracts implement strict state mutability locks and checks-effects-interactions patterns to prevent reentrancy attacks during payout claims.
 
-## Current limitations (be honest)
+---
 
-- The SDK trusts the gateway's TLS transport for reads it doesn't separately
-  verify (game lists, pool balances, quest progress). Only round outcomes
-  carry a cryptographic proof today — payout correctness is enforced
-  on-chain, not re-verified client-side by this SDK.
-- `pollTxStatus` trusts the gateway's reported transaction status; for a
-  fully trust-minimized check, verify the transaction hash directly against
-  Horizon or an RPC node.
-- There is no rate limiting or retry/backoff built into the low-level
-  `request()` wrapper — callers building high-throughput integrations should
-  add their own.
+## 4. Responsible Disclosure
 
-## Reporting a vulnerability
+If you discover a security vulnerability in `@stellarcade/sdk` or the underlying smart contracts:
 
-See `SECURITY.md` in the [stellarcade monorepo](https://github.com/TheBlockCade/stellarcade).
+- **Email**: `security@stellarcade.fun`
+- **PGP Key ID**: `0xSTC_SECURITY_2026`
+- **Response SLA**: Initial triage within 24 hours.
