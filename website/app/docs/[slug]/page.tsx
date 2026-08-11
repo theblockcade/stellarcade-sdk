@@ -17,7 +17,6 @@ export default async function DocPage({ params }: { params: Promise<{ slug: stri
 
   return (
     <article>
-      <h1>{page.title}</h1>
       <Markdown content={page.content} />
       <nav className="docs-pager" aria-label="Docs pagination">
         {prev ? (
