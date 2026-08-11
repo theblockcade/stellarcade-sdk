@@ -1,5 +1,5 @@
 {
-  "name": "stellarcade-sdk",
+  "name": "@stellarcade/sdk",
   "version": "0.1.0",
   "description": "TypeScript client SDK for TheBlockCade — a provably-fair arcade platform on Stellar/Soroban",
   "license": "Apache-2.0",
