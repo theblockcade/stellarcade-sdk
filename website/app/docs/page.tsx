@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation";
+import DocPage from "./[slug]/page";
 
-export default function DocsIndexPage() {
-  redirect("/docs/introduction");
+export default async function DocsIndexPage() {
+  return <DocPage params={Promise.resolve({ slug: "introduction" })} />;
 }
