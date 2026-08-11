@@ -22,8 +22,12 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--ink);
+  /* --font-jakarta is injected by next/font in app/layout.tsx. Using the
+     variable (not the bare "Plus Jakarta Sans" family name) is what makes
+     the self-hosted font actually apply instead of silently falling back
+     to a system sans. */
   font-family:
-    "Plus Jakarta Sans",
+    var(--font-jakarta),
     -apple-system,
     BlinkMacSystemFont,
     sans-serif;
@@ -121,7 +125,7 @@ a:hover {
   line-height: 1.7;
 }
 .docs-prose code {
-  font-family: "Space Mono", monospace;
+  font-family: var(--font-space-mono), monospace;
   background: var(--surface2);
   border: 1px solid var(--line);
   border-radius: 6px;
