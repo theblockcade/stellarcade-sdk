@@ -25,16 +25,14 @@ import { StellarCadeClient, createConfig, FreighterConnector } from "stellarcade
 
 const config = createConfig({
   network: "testnet",
-  gatewayUrl: "https://gateway.testnet.theblockcade.xyz",
-  arbiterUrl: "https://arbiter.testnet.theblockcade.xyz",
+  gatewayUrl: "https://stellarcade-backend.onrender.com/api",
+  arbiterUrl: "https://stellarcade-arbiter.onrender.com",
   contracts: {
-    accessControl: "C...",
-    randomGenerator: "C...",
-    prizePool: "C...",
-    leaderboard: "C...",
-    questLedger: "C...",
-    treasury: "C...",
-    games: { "coin-flip": "C..." },
+    accessControl: "CC2IRAYC3CT5KAV4PZKXKCE45Z3QAJQSJH7P5J3GITJT4T3KZ6634R7K",
+    randomGenerator: "CAMYBISVQSSVJ3EPAZQWKPTTPGTYY5XIS2BZAG4TYFWTUKHQNPVXAV4O",
+    prizePool: "CBVNIITX42KQA3MKNUBKG4YIK4FCASZQWKWGHY3YYMM4ANGZ6MOZI2EC",
+    achievementBadge: "CC7SDE6RRV4X7XRHU6OM6GLDIKBC6EZYNHTRGDLEHYNVUWWO3LUJLA5M",
+    games: { "coin-flip": "CDP77TELLHACC46EHR3N4ISRWJME446AGK5RM7D4D42YKDCB4LXICKTE" },
   },
 });
 
