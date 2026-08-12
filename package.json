@@ -21,6 +21,7 @@
     "node": ">=22"
   },
   "scripts": {
+    "prepare": "git config core.hooksPath .githooks",
     "build": "tsup",
     "dev": "tsup --watch",
     "test": "vitest run",
