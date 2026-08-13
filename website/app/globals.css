@@ -389,6 +389,42 @@ a:hover {
   color: var(--signal);
 }
 
+/* Noise background (home only) */
+.noise-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  background: var(--bg);
+}
+.noise-bg-spotlight {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: radial-gradient(
+    circle 900px at 50% 220px,
+    rgba(0, 255, 204, 0.2),
+    transparent 75%
+  );
+}
+.noise-bg-grid {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background-image:
+    linear-gradient(to right, rgba(148, 163, 184, 0.23) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(148, 163, 184, 0.23) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+.noise-bg-canvas {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  image-rendering: pixelated;
+}
+
 /* Home hero */
 .home-hero {
   max-width: 800px;

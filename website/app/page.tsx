@@ -1,8 +1,10 @@
 import Link from "next/link";
+import NoiseBackground from "@/components/ui/noise-background";
 
 export default function HomePage() {
   return (
     <main className="home-hero">
+      <NoiseBackground />
       <h1>
         Provably fair, <span className="g">provably yours to verify</span>
       </h1>
