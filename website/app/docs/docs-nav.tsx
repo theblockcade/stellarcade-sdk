@@ -26,24 +26,26 @@ export function DocsNav({ sections = DOCS_SECTIONS }: { sections?: DocSection[] 
   }, [sections, searchQuery]);
 
   return (
-    <nav aria-label="Documentation" className="docs-nav-root">
+    <nav aria-label="Documentation">
       {/* Real-time search filter */}
-      <div className="docs-search-wrapper">
+      <div className="mb-5 px-1">
         <input
           type="text"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="Search docs..."
-          className="docs-search-input"
+          className="w-full rounded-lg border border-line-strong bg-surface2 px-3 py-2 text-[13px] text-white outline-none transition-colors duration-150 focus:border-signal"
           aria-label="Filter documentation chapters"
         />
       </div>
 
-      <div className="docs-nav-sections">
+      <div>
         {filteredSections.map((section) => (
-          <div key={section.title} className="docs-nav-group">
-            <div className="docs-nav-group-title">{section.title}</div>
-            <ul className="docs-nav-list">
+          <div key={section.title} className="mb-6">
+            <div className="mb-2 px-3 text-[0.6875rem] font-bold uppercase tracking-[0.08em] text-muted2">
+              {section.title}
+            </div>
+            <ul className="m-0 list-none p-0">
               {section.items.map((item) => {
                 const href = `/docs/${item.slug}`;
                 const active = pathname === href;
@@ -53,12 +55,18 @@ export function DocsNav({ sections = DOCS_SECTIONS }: { sections?: DocSection[] 
                     <Link
                       href={href}
                       prefetch={true}
-                      className={`docs-nav-link${active ? " active" : ""}`}
+                      className={`mb-0.5 flex items-center justify-between gap-2 rounded-lg px-3 py-1.75 text-[13.5px] font-medium transition-colors duration-150 ${
+                        active
+                          ? "bg-signal/8 font-semibold text-signal"
+                          : "text-muted hover:bg-surface2 hover:text-ink"
+                      }`}
                       aria-current={active ? "page" : undefined}
                     >
-                      <span className="docs-nav-link-text">{item.title}</span>
+                      <span className="flex-1 truncate">{item.title}</span>
                       {item.tag && (
-                        <span className="docs-nav-tag">{item.tag}</span>
+                        <span className="rounded-sm bg-signal/12 px-1.5 py-px text-[0.625rem] font-bold uppercase tracking-[0.03em] text-signal">
+                          {item.tag}
+                        </span>
                       )}
                     </Link>
                   </li>
