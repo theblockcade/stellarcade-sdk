@@ -1,24 +1,36 @@
 import Link from "next/link";
 import NoiseBackground from "@/components/ui/noise-background";
 
+const btnBase =
+  "inline-flex items-center gap-2 rounded-full px-[26px] py-3.5 text-[15px] font-bold transition-all duration-200";
+
 export default function HomePage() {
   return (
-    <main className="home-hero">
+    <main className="mx-auto max-w-200 px-6 pt-30 pb-20 text-center">
       <NoiseBackground />
-      <h1>
-        Provably fair, <span className="g">provably yours to verify</span>
+      <h1 className="text-[clamp(2.4rem,5.5vw,3.8rem)] leading-[1.05] font-extrabold tracking-[-0.03em]">
+        Provably fair,{" "}
+        <span className="bg-linear-to-r from-signal to-hot bg-clip-text text-transparent">
+          provably yours to verify
+        </span>
       </h1>
-      <p>
+      <p className="mx-auto mt-6 max-w-150 text-[1.15rem] leading-[1.65] text-muted">
         stellarcade-sdk is the TypeScript client for TheBlockCade — games, prize
         pools, quests and tournaments on Stellar/Soroban. Every round ships with
         a commit-reveal proof you can check yourself, offline, with one function
         call.
       </p>
-      <div className="home-cta">
-        <Link className="btn btn-signal" href="/docs/quickstart">
+      <div className="mt-9 inline-flex gap-3.5">
+        <Link
+          className={`${btnBase} bg-signal text-bg shadow-[0_4px_20px_var(--color-signal-glow)] hover:bg-hot hover:-translate-y-px`}
+          href="/docs/quickstart"
+        >
           Get started
         </Link>
-        <Link className="btn btn-dark" href="/docs/fairness">
+        <Link
+          className={`${btnBase} border border-line-strong bg-surface2 text-ink hover:border-signal hover:bg-surface3 hover:text-signal`}
+          href="/docs/fairness"
+        >
           How fairness works
         </Link>
       </div>

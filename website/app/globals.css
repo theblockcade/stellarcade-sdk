@@ -1,401 +1,54 @@
-:root {
-  --bg: #050505;
-  --bg2: #0b0f14;
-  --surface: #10161f;
-  --surface2: #161f2c;
-  --surface3: #1e293b;
-  --line: rgba(255, 255, 255, 0.08);
-  --line-strong: rgba(255, 255, 255, 0.15);
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
 
-  --signal: #00ffcc;
-  --signal-glow: rgba(0, 255, 204, 0.25);
-  --hot: #00ff66;
-  --credit: #ffd23f;
+@theme {
+  --color-bg: #050505;
+  --color-bg2: #0b0f14;
+  --color-surface: #10161f;
+  --color-surface2: #161f2c;
+  --color-surface3: #1e293b;
+  --color-line: rgba(255, 255, 255, 0.08);
+  --color-line-strong: rgba(255, 255, 255, 0.15);
 
-  --ink: #ffffff;
-  --muted: rgba(255, 255, 255, 0.72);
-  --muted2: rgba(255, 255, 255, 0.45);
-}
+  --color-signal: #00ffcc;
+  --color-signal-glow: rgba(0, 255, 204, 0.25);
+  --color-hot: #00ff66;
+  --color-credit: #ffd23f;
 
-* {
-  box-sizing: border-box;
-}
+  --color-ink: #ffffff;
+  --color-muted: rgba(255, 255, 255, 0.72);
+  --color-muted2: rgba(255, 255, 255, 0.45);
 
-body {
-  margin: 0;
-  background: var(--bg);
-  color: var(--ink);
-  font-family:
-    var(--font-jakarta),
-    -apple-system,
-    BlinkMacSystemFont,
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
+  --font-sans: var(--font-jakarta), -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: var(--font-space-mono), monospace;
 }
 
-a {
-  color: var(--signal);
-  text-decoration: none;
-  transition: color 0.15s ease;
-}
-a:hover {
-  color: var(--hot);
-}
-
-.docs-topbar {
-  position: sticky;
-  top: 0;
-  z-index: 50;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  height: 64px;
-  padding: 0 28px;
-  border-bottom: 1px solid var(--line);
-  background: rgba(5, 5, 5, 0.85);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+@layer base {
+  body {
+    margin: 0;
+    background: var(--color-bg);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+  a {
+    color: var(--color-signal);
+    text-decoration: none;
+    transition: color 0.15s ease;
+  }
+  a:hover {
+    color: var(--color-hot);
+  }
 }
 
-.docs-brand {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-weight: 800;
-  font-size: 1.125rem;
-  letter-spacing: -0.01em;
-}
-.docs-brand .g {
-  background: linear-gradient(120deg, var(--signal), var(--hot));
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-.docs-badge {
-  font-size: 0.6875rem;
-  font-weight: 700;
-  padding: 2px 8px;
-  border-radius: 999px;
-  background: rgba(0, 255, 204, 0.12);
-  color: var(--signal);
-  border: 1px solid rgba(0, 255, 204, 0.25);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.docs-body {
-  display: flex;
-  align-items: flex-start;
-  max-width: 1300px;
-  margin: 0 auto;
-}
-
-.docs-sidebar {
-  position: sticky;
-  top: 64px;
-  flex-shrink: 0;
-  width: 290px;
-  height: calc(100vh - 64px);
-  overflow-y: auto;
-  padding: 24px 16px 48px;
-  border-right: 1px solid var(--line);
-}
-
-.docs-search-wrapper {
-  margin-bottom: 20px;
-  padding: 0 4px;
-}
-
-.docs-search-input {
-  width: 100%;
-  padding: 8px 12px;
-  border-radius: 8px;
-  background: var(--surface2);
-  border: 1px solid var(--line-strong);
-  color: #fff;
-  font-size: 13px;
-  outline: none;
-  transition: all 0.15s ease;
-}
-.docs-search-input:focus {
-  border-color: var(--signal);
-  box-shadow: 0 0 10px rgba(0, 255, 204, 0.15);
-}
-
-.docs-nav-group {
-  margin-bottom: 24px;
-}
-
-.docs-nav-group-title {
-  font-size: 0.6875rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--muted2);
-  padding: 0 12px;
-  margin-bottom: 8px;
-}
-
-.docs-nav-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.docs-nav-link {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 7px 12px;
-  margin-bottom: 2px;
-  border-radius: 8px;
-  font-size: 13.5px;
-  font-weight: 500;
-  color: var(--muted);
-  transition: all 0.15s ease;
-}
-.docs-nav-link:hover {
-  color: var(--ink);
-  background: var(--surface2);
-  text-decoration: none;
-}
-.docs-nav-link.active {
-  color: var(--signal);
-  background: rgba(0, 255, 204, 0.08);
-  border-left: 2px solid var(--signal);
-  font-weight: 700;
-}
-
-.docs-nav-link-text {
-  flex: 1;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.docs-nav-tag {
-  font-size: 0.625rem;
-  font-weight: 700;
-  padding: 1px 6px;
-  border-radius: 4px;
-  background: rgba(0, 255, 204, 0.12);
-  color: var(--signal);
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-}
-
-.docs-content {
-  flex: 1;
-  min-width: 0;
-  padding: 44px clamp(20px, 6vw, 64px) 120px;
-  max-width: 820px;
-}
-
-.docs-prose h1 {
-  font-size: 2.25rem;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  margin-top: 0;
-  margin-bottom: 24px;
-  color: #ffffff;
-}
-.docs-prose h2 {
-  font-size: 1.5rem;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  margin: 44px 0 16px;
-  border-top: 1px solid var(--line);
-  padding-top: 24px;
-  color: #f1f5f9;
-}
-.docs-prose h3 {
-  font-size: 1.1875rem;
-  font-weight: 600;
-  margin: 28px 0 12px;
-  color: #e2e8f0;
-}
-.docs-prose p {
-  color: var(--muted);
-  font-size: 1rem;
-  line-height: 1.75;
-  margin: 16px 0;
-}
-.docs-prose ul, .docs-prose ol {
-  color: var(--muted);
-  line-height: 1.75;
-  padding-left: 24px;
-  margin: 16px 0;
-}
-.docs-prose li {
-  margin-bottom: 8px;
-}
-
-/* Code & Syntax Highlighting */
-.inline-code {
-  font-family: var(--font-space-mono), monospace;
-  background: var(--surface2);
-  border: 1px solid var(--line-strong);
-  border-radius: 6px;
-  padding: 2px 7px;
-  color: var(--signal);
-  font-size: 0.86em;
-}
-
-.code-block-wrapper {
-  margin: 24px 0;
-  border-radius: 12px;
-  border: 1px solid var(--line-strong);
-  background: var(--surface);
-  overflow: hidden;
-}
-
-.code-block-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 8px 16px;
-  background: var(--surface2);
-  border-bottom: 1px solid var(--line);
-  font-size: 0.75rem;
-}
-
-.code-block-lang {
-  font-family: var(--font-space-mono), monospace;
-  text-transform: uppercase;
-  color: var(--muted2);
-  font-weight: 700;
-  letter-spacing: 0.05em;
-}
-
-.code-block-copy-btn {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  background: transparent;
-  border: none;
-  color: var(--muted);
-  cursor: pointer;
-  padding: 3px 8px;
-  border-radius: 4px;
-  font-size: 0.75rem;
-  transition: all 0.15s ease;
-}
-.code-block-copy-btn:hover {
-  color: var(--signal);
-  background: rgba(0, 255, 204, 0.1);
-}
-
-.docs-prose pre {
-  margin: 0;
-  padding: 18px 20px;
-  overflow-x: auto;
-  background: transparent;
-  font-size: 0.88rem;
-  line-height: 1.6;
-}
-
-.docs-prose pre code {
-  font-family: var(--font-space-mono), monospace;
-  background: none;
-  border: none;
-  padding: 0;
-  color: #e2e8f0;
-}
-
-/* Callouts */
-.docs-callout {
-  margin: 24px 0;
-  padding: 16px 20px;
-  border-left: 3px solid var(--signal);
-  background: rgba(0, 255, 204, 0.04);
-  border-radius: 0 10px 10px 0;
-  color: var(--ink);
-}
-.docs-callout p {
-  margin: 0;
-  color: rgba(255, 255, 255, 0.85);
-  font-size: 0.9375rem;
-}
-
-/* Tables */
-.table-container {
-  margin: 28px 0;
-  overflow-x: auto;
-  border-radius: 10px;
-  border: 1px solid var(--line);
-  background: var(--surface);
-}
-
-.docs-prose table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.88rem;
-}
-.docs-prose th {
-  background: var(--surface2);
-  color: #ffffff;
-  font-weight: 700;
-  text-align: left;
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--line-strong);
-}
-.docs-prose td {
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--line);
-  color: var(--muted);
-}
-.docs-prose tr:last-child td {
-  border-bottom: none;
-}
-.docs-prose tr:hover td {
-  background: rgba(255, 255, 255, 0.02);
-}
-
-/* Pager */
-.docs-pager {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 64px;
-  padding-top: 24px;
-  border-top: 1px solid var(--line);
-  gap: 16px;
-}
-
-.docs-pager-link {
-  display: flex;
-  flex-direction: column;
-  padding: 14px 20px;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: var(--surface);
-  min-width: 180px;
-  transition: all 0.2s ease;
-}
-.docs-pager-link:hover {
-  border-color: var(--signal);
-  background: var(--surface2);
-  text-decoration: none;
-}
-.docs-pager-link span {
-  font-size: 0.75rem;
-  color: var(--muted2);
-  text-transform: uppercase;
-  font-weight: 600;
-  margin-bottom: 4px;
-}
-.docs-pager-link strong {
-  font-size: 0.95rem;
-  color: var(--signal);
-}
-
-/* Noise background (home only) */
+/* Noise background (home only) — kept as raw CSS since it's a layered
+   gradient/canvas effect that isn't a good fit for utility classes. */
 .noise-bg {
   position: fixed;
   inset: 0;
   z-index: -1;
   overflow: hidden;
-  background: var(--bg);
+  background: var(--color-bg);
 }
 .noise-bg-spotlight {
   position: absolute;
@@ -425,77 +78,8 @@ a:hover {
   image-rendering: pixelated;
 }
 
-/* Home hero */
-.home-hero {
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 120px 24px 80px;
-  text-align: center;
-}
-.home-hero h1 {
-  font-size: clamp(2.4rem, 5.5vw, 3.8rem);
-  line-height: 1.05;
-  font-weight: 800;
-  letter-spacing: -0.03em;
-}
-.home-hero .g {
-  background: linear-gradient(120deg, var(--signal), var(--hot));
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-.home-hero p {
-  color: var(--muted);
-  font-size: 1.15rem;
-  margin: 24px auto 0;
-  max-width: 600px;
-  line-height: 1.65;
-}
-.home-cta {
-  display: inline-flex;
-  gap: 14px;
-  margin-top: 36px;
-}
-.btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 14px 26px;
-  border-radius: 999px;
-  font-weight: 700;
-  font-size: 15px;
-  transition: all 0.2s ease;
-}
-.btn-signal {
-  background: var(--signal);
-  color: #050505;
-  box-shadow: 0 4px 20px var(--signal-glow);
-}
-.btn-signal:hover {
-  background: var(--hot);
-  transform: translateY(-1px);
-}
-.btn-dark {
-  background: var(--surface2);
-  border: 1px solid var(--line-strong);
-  color: var(--ink);
-}
-.btn-dark:hover {
-  background: var(--surface3);
-  border-color: var(--signal);
-  color: var(--signal);
-}
-
-@media (max-width: 840px) {
-  .docs-sidebar {
-    display: none;
-  }
-  .docs-content {
-    padding: 24px 20px 80px;
-  }
-}
-
-/* Custom Ultra-Sleek Scrollbar Architecture (matching ACOB-Website standard) */
+/* Custom scrollbar theming — no Tailwind utility equivalent for
+   ::-webkit-scrollbar-* pseudo-elements. */
 html {
   scroll-behavior: smooth;
 }
@@ -506,13 +90,11 @@ html {
   }
 }
 
-/* Firefox standard scrollbar */
 * {
   scrollbar-width: thin;
-  scrollbar-color: var(--signal) transparent;
+  scrollbar-color: var(--color-signal) transparent;
 }
 
-/* Webkit scrollbar width & track */
 html::-webkit-scrollbar,
 body::-webkit-scrollbar,
 ::-webkit-scrollbar {
@@ -533,7 +115,7 @@ body::-webkit-scrollbar-track,
 html::-webkit-scrollbar-thumb,
 body::-webkit-scrollbar-thumb,
 ::-webkit-scrollbar-thumb {
-  background: var(--signal) !important;
+  background: var(--color-signal) !important;
   border-radius: 0 !important;
   border: 0 !important;
   box-shadow: none !important;
@@ -543,7 +125,7 @@ body::-webkit-scrollbar-thumb,
 html::-webkit-scrollbar-thumb:hover,
 body::-webkit-scrollbar-thumb:hover,
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--hot) !important;
+  background: var(--color-hot) !important;
 }
 
 html::-webkit-scrollbar-button,
@@ -575,7 +157,6 @@ body::-webkit-scrollbar-corner,
   background: transparent !important;
 }
 
-/* Utility to cleanly hide scrollbar where needed */
 .hide-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
@@ -583,4 +164,3 @@ body::-webkit-scrollbar-corner,
 .hide-scrollbar::-webkit-scrollbar {
   display: none;
 }
-
