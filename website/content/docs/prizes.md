@@ -1,75 +1,43 @@
-# Prize Pools & Vault Architecture
+# Prize Pools
 
-StellarCade implements on-chain liquidity vaults and community prize pools governed by the `prize-pool` Soroban smart contract.
-
----
-
-## Vault Architecture & Yield Splits
-
-Every match played on StellarCade routes a small percentage of its fee into the autonomous prize pool vault:
-
-```
-                  ┌───────────────────────────────┐
-                  │    Match Stake (e.g. 100 XLM) │
-                  └───────────────┬───────────────┘
-                                  │
-          ┌───────────────────────┴───────────────────────┐
-          ▼                                               ▼
-┌───────────────────────────────┐               ┌───────────────────────────────┐
-│     Winner Payout (98%)       │               │      Vault Escrow (2%)        │
-│          98 XLM               │               │            2 XLM              │
-└───────────────────────────────┘               └───────────────┬───────────────┘
-                                                                │
-                                ┌───────────────────────────────┴───────────────────────────────┐
-                                ▼                                                               ▼
-                ┌───────────────────────────────┐                               ┌───────────────────────────────┐
-                │     Weekly Jackpot (70%)      │                               │     Seasonal Quest Pool (30%) │
-                │           1.40 XLM            │                               │            0.60 XLM           │
-                └───────────────────────────────┘                               └───────────────────────────────┘
-```
+Every game backs onto a prize pool, managed on-chain by the `prize-pool` contract (see [Soroban Smart Contracts](/contracts) for its status — real logic, zero tests as of this writing) and read through the gateway via `PrizesClient`.
 
 ---
 
-## Querying Prize Pool State with `PrizePoolClient`
+## Reading Pool State
 
 ```typescript
-import { PrizePoolClient, SorobanClient } from "@stellarcade/sdk";
+import { StellarCadeClient, createConfig } from "@stellarcade/sdk";
 
-const soroban = new SorobanClient({
-  rpcUrl: "https://soroban-testnet.stellar.org",
-  networkPassphrase: "Test SDF Network ; September 2015",
-});
+const client = new StellarCadeClient(createConfig({
+  network: "testnet",
+  gatewayUrl: "https://gateway.stellarcade.example",
+  arbiterUrl: "https://arbiter.stellarcade.example",
+  contracts: { /* ...contract addresses... */ },
+}));
 
-const pool = new PrizePoolClient({
-  client: soroban,
-  contractId: "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-});
+// One pool
+const pool = await client.prizes.getPool("coin-flip");
+console.log("Balance:", pool.balance, pool.asset);
+console.log("Last payout:", pool.lastPayoutAt ? new Date(pool.lastPayoutAt) : "never");
 
-// Fetch current reserve metrics
-const state = await pool.getPoolState();
-
-console.log("Total Reserve (XLM):", state.totalReserveXlm);
-console.log("Current Epoch:", state.currentEpoch);
-console.log("Next Jackpot Draw Time:", new Date(state.nextDrawTimestampMs).toLocaleString());
-console.log("Accumulated Weekly Jackpot:", state.weeklyJackpotAmount, "XLM");
+// Every pool
+const pools = await client.prizes.listPools();
+pools.forEach((p) => console.log(`${p.gameId}: ${p.balance} ${p.asset}`));
 ```
+
+`PrizePoolState` is intentionally minimal — `poolId`, `gameId`, `balance`, `asset`, `lastPayoutAt`. There's no `weeklyJackpot`, `currentEpoch`, or `vaultHealth` field; those don't exist in the SDK's types.
 
 ---
 
-## Prize Claiming Lifecycle
-
-When a jackpot or tournament concludes:
-1. The Arbiter publishes the winning ticket merkle root to the `prize-pool` contract.
-2. The user's client queries eligible claims using `getEligibleClaims(userAddress)`.
-3. The user signs an on-chain `claim_prize` transaction to withdraw their reward directly to their Stellar wallet.
+## Claiming
 
 ```typescript
-const claims = await pool.getEligibleClaims("GBZXN7PIRZGNMHGA72STUFIO");
-
-for (const claim of claims) {
-  console.log(`Claiming Epoch #${claim.epochId} for ${claim.amountXlm} XLM`);
-  const tx = await pool.buildClaimTransaction(claim.claimId);
-  const signed = await window.freighter.signTransaction(tx.xdr);
-  await soroban.submitTransaction(signed);
-}
+const result = await client.prizes.claim(pool.poolId, playerAddress);
+await client.waitForTx(result.hash);
+console.log("Claim submitted:", result.hash);
 ```
+
+`claim()` is a single gateway call — the SDK doesn't expose a separate "list eligible claims, then build and sign a claim transaction" flow. The gateway handles building the underlying transaction; you only need a connected wallet (see [Wallet Connectors](/wallet-connectors)) to sign it if the flow requires your signature.
+
+For the on-chain functions backing this (`fund`, `reserve`, `release`, `payout`, `sync`), see [Soroban Smart Contracts](/contracts).
