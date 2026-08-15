@@ -1,52 +1,68 @@
-# Coinflip Duel Engine Integration
+# Coinflip Integration Walkthrough
 
-The **Coinflip Duel Engine** is StellarCade's high-frequency 1v1 PvP and player-vs-house duel system.
+`coin-flip` (`GameId: "coin-flip"`) is a 50/50 round backed by the `coin-flip` Soroban contract — see [Soroban Smart Contracts](/contracts) for its current status (real logic, zero tests as of this writing).
 
 ---
 
-## Duel Mechanics
+## Round Mechanics
 
-- **Wagers**: 5, 10, 25, 50, or 100 XLM.
-- **Odds**: Exactly 50.00% (Heads = 0, Tails = 1).
-- **Fee**: 2% protocol fee (routed to the autonomous prize pool vault).
-- **Settlement Speed**: Sub-second client resolution with on-chain Soroban confirmation in 3-5 seconds.
+- **Wager bounds and fee**: set per-deployment by the contract admin at `initialize(admin, vault, fee_bps)` — call `client.games.get("coin-flip")` for the live `minStake`/`maxStake` rather than assuming fixed numbers.
+- **Odds**: exactly 50.00% — the outcome is `derivedValue % 2`, so `0` and `1` are equally likely by construction (see [Fairness Spec](/fairness)).
+- **Choice payload**: `{ side: "heads" | "tails" }`, passed as `PlayRoundInput.choice`.
 
 ---
 
 ## Complete Integration Walkthrough
 
-### 1. Initiate Duel Match
+### 1. Commit and Play
+
 ```typescript
-import { CoinFlipClient, CoinFlipSide, SorobanClient } from "@stellarcade/sdk";
+import { StellarCadeClient, FreighterConnector, createConfig } from "@stellarcade/sdk";
 
-const soroban = new SorobanClient({
-  rpcUrl: "https://soroban-testnet.stellar.org",
-  networkPassphrase: "Test SDF Network ; September 2015",
+const client = new StellarCadeClient(createConfig({
+  network: "testnet",
+  gatewayUrl: "https://gateway.stellarcade.example",
+  arbiterUrl: "https://arbiter.stellarcade.example",
+  contracts: { /* ...contract addresses... */ },
+}));
+
+client.registerConnector(new FreighterConnector());
+const playerAddress = await client.connect("freighter");
+
+const commitment = await client.games.commitRound("coin-flip");
+
+const tx = await client.games.play({
+  gameId: "coin-flip",
+  playerAddress,
+  stake: "10.0000000",
+  clientSeed: crypto.randomUUID(),
+  choice: { side: "heads" },
 });
 
-const duelClient = new CoinFlipClient({
-  client: soroban,
-  contractId: process.env.NEXT_PUBLIC_COIN_FLIP_CONTRACT_ID!,
-});
-
-// Create new duel challenge
-const duel = await duelClient.createDuel({
-  creator: "GBZXN7PIRZGNMHGA72STUFIO",
-  wagerXlm: 25,
-  pickedSide: CoinFlipSide.Heads,
-  clientSeed: "MY_ENTROPY_SEED_123",
-});
-
-console.log("Duel Created! ID:", duel.duelId);
+console.log("Submitted. Tx hash:", tx.hash);
 ```
 
-### 2. Settle & Claim Winnings
-```typescript
-const settlement = await duelClient.settleDuel(duel.duelId);
+### 2. Wait for Settlement and Read the Result
 
-if (settlement.winner === "GBZXN7PIRZGNMHGA72STUFIO") {
-  console.log("You won 49 XLM! Payout TxHash:", settlement.txHash);
-} else {
-  console.log("Opponent won the duel.");
-}
+```typescript
+await client.waitForTx(tx.hash);
+
+const result = await client.games.getResult(commitment.roundId);
+console.log("Outcome:", result.outcome, "| Payout:", result.payout);
 ```
+
+### 3. Verify the Proof Independently
+
+Once the round is revealed, fetch the proof and check it yourself — no need to trust the gateway's `getResult` response:
+
+```typescript
+import { verifyProof } from "@stellarcade/sdk";
+
+const response = await fetch(`https://arbiter.stellarcade.example/proofs/${commitment.roundId}`);
+const proof = await response.json();
+
+const verification = await verifyProof(commitment, proof);
+console.log("Independently verified?", verification.valid);
+```
+
+See [Provable Fairness Spec](/fairness) for what `verifyProof` checks and a real, reproducible test vector.
