@@ -20,13 +20,13 @@ export default function DocsLayout({ children }: { children: ReactNode }) {
         </div>
 
         <div className="flex items-center gap-4">
-          <Link href="/docs/quickstart" className="text-[13px] text-muted transition-colors hover:text-ink">
+          <Link href="/quickstart" className="text-[13px] text-muted transition-colors hover:text-ink">
             Quickstart
           </Link>
-          <Link href="/docs/fairness" className="text-[13px] text-muted transition-colors hover:text-ink">
+          <Link href="/fairness" className="text-[13px] text-muted transition-colors hover:text-ink">
             Fairness Spec
           </Link>
-          <Link href="/docs/api-reference" className="text-[13px] text-muted transition-colors hover:text-ink">
+          <Link href="/api-reference" className="text-[13px] text-muted transition-colors hover:text-ink">
             API
           </Link>
           <a
