@@ -4,65 +4,62 @@ Install `@stellarcade/sdk` using your preferred package manager. The package shi
 
 ```bash
 # Using pnpm (recommended)
-pnpm add @stellarcade/sdk @stellar/stellar-sdk
+pnpm add @stellarcade/sdk
 
 # Using npm
-npm install @stellarcade/sdk @stellar/stellar-sdk
+npm install @stellarcade/sdk
 
 # Using yarn
-yarn add @stellarcade/sdk @stellar/stellar-sdk
+yarn add @stellarcade/sdk
 
 # Using bun
-bun add @stellarcade/sdk @stellar/stellar-sdk
+bun add @stellarcade/sdk
 ```
 
 ---
 
-## Peer Dependencies
+## Dependencies
 
-`@stellarcade/sdk` requires `@stellar/stellar-sdk` (v13.0.0 or higher) for Soroban XDR serialization, transaction envelopes, and RPC communication:
+`@stellarcade/sdk` bundles `@stellar/stellar-sdk` (^16.0.1) as a regular dependency — you don't need to install it separately, and there's no minimum version to pin yourself.
 
 ```json
 {
   "dependencies": {
-    "@stellarcade/sdk": "^0.1.0",
-    "@stellar/stellar-sdk": "^13.0.0"
-  },
-  "optionalDependencies": {
-    "@stellar/freighter-api": "^6.0.0"
+    "@stellarcade/sdk": "^0.1.0"
   }
 }
 ```
 
 > [!NOTE]
-> If you are building a browser-based application with wallet login, install `@stellar/freighter-api` to enable the built-in `FreighterAdapter`.
+> `FreighterConnector` (the built-in Freighter wallet connector) needs no extra package either — it talks directly to `window.freighterApi`, which the Freighter browser extension injects itself. Just make sure the extension is installed in the browser your users are on.
 
 ---
 
 ## Environment Configuration
 
-Configure your environment variables to target Stellar Testnet or Mainnet:
+`createConfig()` needs a network, your gateway/arbiter URLs, and the contract addresses you're targeting — `rpcUrl`, `horizonUrl`, and `networkPassphrase` are optional and default per-network if omitted:
 
 ```env
-# Stellar / Soroban Network
-NEXT_PUBLIC_STELLAR_NETWORK=TESTNET
-NEXT_PUBLIC_SOROBAN_RPC_URL=https://soroban-testnet.stellar.org
-NEXT_PUBLIC_HORIZON_URL=https://horizon-testnet.stellar.org
+# Stellar Network
+NEXT_PUBLIC_STELLAR_NETWORK=testnet
 
-# Deployed Contract Addresses (Testnet)
-NEXT_PUBLIC_COIN_FLIP_CONTRACT_ID=CDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD
-NEXT_PUBLIC_PRIZE_POOL_CONTRACT_ID=CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-NEXT_PUBLIC_RANDOM_GENERATOR_CONTRACT_ID=CEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE
+# StellarCade services
+NEXT_PUBLIC_GATEWAY_URL=https://gateway.stellarcade.example
+NEXT_PUBLIC_ARBITER_URL=https://arbiter.stellarcade.example
+
+# Contract addresses — see /contracts for current deployment status
+NEXT_PUBLIC_COIN_FLIP_CONTRACT_ID=C...
+NEXT_PUBLIC_PRIZE_POOL_CONTRACT_ID=C...
+NEXT_PUBLIC_RANDOM_GENERATOR_CONTRACT_ID=C...
 ```
+
+Pass these into `createConfig({ network, gatewayUrl, arbiterUrl, contracts })` as shown in the [Quickstart](/quickstart) — see [`CreateConfigOptions`](/api-reference) for the full shape.
 
 ---
 
 ## Node.js & Browser Compatibility
 
-`@stellarcade/sdk` is zero-dependency on Node-specific native bindings and uses the standard **WebCrypto API** (`crypto.subtle`), making it fully compatible with:
+`@stellarcade/sdk` uses the standard **WebCrypto API** (`crypto.subtle`) for fairness verification, so that part of the SDK runs anywhere WebCrypto is available. The package itself requires:
 
-- Next.js (App Router & Pages Router)
-- Vite / React / Vue / Svelte
-- Node.js 18+ / 20+ / 22+
-- Cloudflare Workers / Vercel Edge Runtime
-- Bun and Deno
+- Node.js 22+ (per `engines.node` in `package.json`)
+- Any modern browser (Next.js, Vite, or plain bundler builds)
