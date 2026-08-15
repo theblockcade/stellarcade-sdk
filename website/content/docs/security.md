@@ -1,54 +1,33 @@
 # Security Architecture & Threat Model
 
-StellarCade is designed around a strict zero-custody, cryptographically verifiable threat model. This document details protocol security guarantees, vulnerability mitigations, and key isolation boundaries.
+---
+
+## 1. Key Isolation & Custody
+
+Neither the SDK nor the web frontend ever has access to a user's private key or seed phrase. Every `WalletConnector` (see [Wallet Connectors](/wallet-connectors)) — Freighter today — signs inside the extension's own sandbox and returns only a signed XDR envelope to the SDK. The user explicitly approves each transaction's details inside the wallet's own popup before signing.
 
 ---
 
-## 1. Key Isolation & Custody Guarantees
+## 2. Front-Running Resistance via Commit-Reveal
 
-```
-┌────────────────────────────────────────────────────────┐
-│               Browser Security Sandbox                 │
-│                                                        │
-│  ┌──────────────────────┐    ┌──────────────────────┐  │
-│  │   Freighter Wallet   │    │  StellarCade Web App │  │
-│  │   (Holds Secret Key) │    │  (Reads Public State)│  │
-│  └──────────┬───────────┘    └──────────┬───────────┘  │
-│             │                           │              │
-│             │  PostMessage Challenge    │              │
-│             │◄──────────────────────────┘              │
-│             │                                          │
-│             │  Signed Transaction Envelope             │
-│             └──────────────────────────►               │
-└────────────────────────────────────────────────────────┘
-```
-
-- **Zero Seed Phrase Exposure**: Neither the web frontend nor the SDK ever has access to the user's private keys or seed phrase.
-- **Explicit Authorization**: Every on-chain mutation requires the user to view and approve the transaction details inside the Freighter popup dialog.
+The arbiter publishes `SHA-256(serverSeed)` before a player's bet is accepted, and the eventual outcome mixes in the client seed and a Stellar ledger hash fetched at settlement time — a value neither the arbiter nor the player controls in advance. See the [Fairness Spec](/fairness) and [Entropy Mixing](/entropy) pages for the exact scheme this relies on.
 
 ---
 
-## 2. Front-Running & MEV Resistance
+## 3. Rate Limiting
 
-On public blockchains, miners and bots can attempt to front-run bets if entropy is derived from public mempool transactions. StellarCade eliminates MEV exploitation through:
+The arbiter enforces a real rate limit (via `@fastify/rate-limit`) on its two state-mutating routes, `POST /games/:gameId/commit` and `POST /rounds/:roundId/settle` — default 30 requests per IP per 60-second window, both configurable server-side. Its read-only routes (`/verify`, `/proofs/:roundId`, `/audit/verify`) are unauthenticated and not rate-limited by default, since they're public proof-checking by design.
 
-1. **Pre-Committed Server Entropy**: The operator's secret seed commitment is published before the player's transaction is submitted.
-2. **Client-Provided Entropy**: The player's client seed is combined into the final digest, guaranteeing that neither party can manipulate the outcome alone.
-3. **Ledger Hash Pinning**: Outcomes bind to the closing ledger sequence, preventing timestamp manipulation.
+The SDK's own `request()` helper does **not** retry or back off automatically — a failed or non-OK gateway/arbiter response throws `RpcError` immediately. If you need retry behavior, implement it in your own calling code.
 
 ---
 
-## 3. Rate Limiting & Denial of Service Mitigations
+## 4. Contract-Level Security
 
-- **Automatic Exponential Backoff**: SDK network requests back off deterministically on HTTP 429 and 500 status codes.
-- **Contract Reentrancy Guards**: All Soroban smart contracts implement strict state mutability locks and checks-effects-interactions patterns to prevent reentrancy attacks during payout claims.
+Whether a given Soroban contract implements reentrancy guards, checks-effects-interactions, or other mitigations varies by contract — this isn't a blanket guarantee across all ~150 crates in `contracts/`. None of the contracts the SDK/gateway currently integrate with (`coin-flip`, `prize-pool`, `random-generator`, `access-control`, `achievement-badge`, `tournament-system`) have had a third-party security audit as of this writing. See [Soroban Smart Contracts](/contracts) for current test-coverage status per contract — treat that as a proxy for maturity, not a security guarantee.
 
 ---
 
-## 4. Responsible Disclosure
+## 5. Reporting a Vulnerability
 
-If you discover a security vulnerability in `@stellarcade/sdk` or the underlying smart contracts:
-
-- **Email**: `security@stellarcade.fun`
-- **PGP Key ID**: `0xSTC_SECURITY_2026`
-- **Response SLA**: Initial triage within 24 hours.
+This documentation site previously listed a security contact email and PGP key that could not be verified against anything in the actual repositories, so it has been removed rather than left in place — publishing an unverified contact for security reports is worse than publishing none. If you've found a vulnerability, open an issue (or, for something sensitive, a private security advisory) on the relevant repository directly: `stellarcade-sdk`, `stellarcade` (main app/contracts), `stellarcade-arbiter`, or `stellarcade-bot`, whichever the finding concerns.
