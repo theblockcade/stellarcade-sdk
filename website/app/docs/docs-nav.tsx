@@ -47,7 +47,7 @@ export function DocsNav({ sections = DOCS_SECTIONS }: { sections?: DocSection[] 
             </div>
             <ul className="m-0 list-none p-0">
               {section.items.map((item) => {
-                const href = `/docs/${item.slug}`;
+                const href = `/${item.slug}`;
                 const active = pathname === href;
 
                 return (

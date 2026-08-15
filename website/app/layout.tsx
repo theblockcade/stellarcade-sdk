@@ -25,15 +25,19 @@ const spaceMono = Space_Mono({
   display: "swap",
 });
 
-const title = "stellarcade-sdk — provably-fair arcade gaming on Stellar";
+const title = "StellarCade SDK | Developer Docs";
 const description =
-  "TypeScript client SDK for TheBlockCade: games, prize pools, quests and tournaments on Stellar/Soroban, with client-side fairness verification you never have to trust us for.";
+  "The official TypeScript SDK for StellarCade — games, prize pools, quests and tournaments on Stellar/Soroban, with built-in client-side fairness verification.";
 
 export const metadata: Metadata = {
   title,
   description,
-  openGraph: { title, description, siteName: "stellarcade-sdk", type: "website" },
+  openGraph: { title, description, siteName: "StellarCade SDK", type: "website" },
   twitter: { card: "summary", title, description },
+  icons: {
+    icon: "/icon.png",
+    shortcut: "/favicon.ico",
+  },
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
