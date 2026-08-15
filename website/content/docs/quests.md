@@ -1,68 +1,49 @@
-# Quests, Milestones & Leaderboards
+# Quests & Leaderboards
 
-StellarCade includes an on-chain progression and gamification system where players complete daily quests, earn XP, unlock Soulbound Badges, and climb competitive leaderboards.
-
----
-
-## The Quest Lifecycle
-
-```
-[Enroll in Quest] ────► [Complete Milestones] ────► [Claim On-Chain XP & Badge]
-```
-
-1. **Daily Quests**: Fast-paced milestones (e.g., "Play 3 Coinflip duels", "Verify 1 round proof offline").
-2. **Seasonal Quests**: Multi-stage challenges rewarding higher prize pool shares and exclusive achievement badges.
-3. **Milestones**: Incremental achievements that automatically track against wallet activity.
+StellarCade tracks quest progress and XP per player, with completed quests eligible for on-chain rewards via the `quest-ledger-v2` and `achievement-badge` contracts (both marked **Implemented** with real test coverage — see [Soroban Smart Contracts](/contracts)). The SDK's `QuestsClient` and `LeaderboardClient` read this state through the gateway.
 
 ---
 
-## Interacting with the Quest Service
+## Reading and Claiming Quests
 
 ```typescript
-import { QuestClient } from "@stellarcade/sdk";
+import { StellarCadeClient, createConfig } from "@stellarcade/sdk";
 
-const questClient = new QuestClient();
+const client = new StellarCadeClient(createConfig({
+  network: "testnet",
+  gatewayUrl: "https://gateway.stellarcade.example",
+  arbiterUrl: "https://arbiter.stellarcade.example",
+  contracts: { /* ...contract addresses... */ },
+}));
 
-// 1. Fetch available quests for a connected wallet
-const quests = await questClient.getQuests({
-  userAddress: "GBZXN7PIRZGNMHGA72STUFIO",
+const quests = await client.quests.listForPlayer(playerAddress);
+
+quests.forEach((q) => {
+  console.log(`${q.questId}: ${q.progress}/${q.target}${q.claimed ? " (claimed)" : ""}`);
+  if (q.streak > 0) console.log(`  Streak: ${q.streak}`);
 });
 
-quests.forEach((quest) => {
-  console.log(`Quest: ${quest.title} [${quest.category}]`);
-  console.log(`XP Reward: ${quest.totalXpReward}`);
-  console.log(`Enrolled: ${quest.enrolled}`);
-  
-  quest.milestones.forEach((m) => {
-    console.log(`  - [${m.completed ? "X" : " "}] ${m.title}`);
-  });
-});
-
-// 2. Enroll in a new quest
-await questClient.enrollQuest("quest_stellar_explorer_v1");
-
-// 3. Claim completed quest reward
-const claimResult = await questClient.claimQuestReward("quest_stellar_explorer_v1");
-console.log("Certificate Minted! SBT Token ID:", claimResult.certificateId);
+// Claim a completed quest
+const completed = quests.find((q) => q.progress >= q.target && !q.claimed);
+if (completed) {
+  const result = await client.quests.claim(completed.questId, playerAddress);
+  await client.waitForTx(result.hash);
+}
 ```
+
+`QuestProgress` is `{ questId, playerAddress, progress, target, claimed, streak }` — there's no separate title/category/milestones structure or XP-reward field in the SDK's types; that level of detail, if you need it, comes from whatever the gateway's quest-listing response includes beyond this typed shape.
 
 ---
 
-## Fetching Real-Time Leaderboards
-
-Leaderboards rank active players based on match volume, win streaks, and earned XP:
+## Leaderboard
 
 ```typescript
-import { LeaderboardClient } from "@stellarcade/sdk";
+const overall = await client.leaderboard.get({ limit: 10 });
+const coinFlipOnly = await client.leaderboard.get({ gameId: "coin-flip", limit: 10 });
 
-const leaderboard = new LeaderboardClient();
-
-const topPlayers = await leaderboard.getTopPlayers({
-  timeframe: "weekly", // "daily" | "weekly" | "all_time"
-  limit: 10,
-});
-
-topPlayers.forEach((player, rank) => {
-  console.log(`#${rank + 1} | ${player.username ?? player.address.slice(0, 8)} | ${player.totalXp} XP | ${player.wins} Wins`);
+overall.forEach((entry) => {
+  console.log(`#${entry.rank} — ${entry.playerAddress.slice(0, 8)}… — ${entry.score}`);
 });
 ```
+
+`LeaderboardQuery` only supports `gameId` and `limit` — there's no `timeframe` ("daily"/"weekly"/"all_time") parameter in the current SDK; ranking windows, if the gateway supports them, aren't exposed through this client yet.

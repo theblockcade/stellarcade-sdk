@@ -8,13 +8,13 @@ export default function HomePage() {
   return (
     <main className="mx-auto max-w-200 px-6 min-h-screen flex flex-col items-center justify-center text-center">
       <NoiseBackground />
-      <h1 className="text-[clamp(3rem,7vw,5.5rem)] leading-[1.05] font-extrabold tracking-[-0.03em]">
+      <h1 className="text-[clamp(2.25rem,9vw,5rem)] leading-[1.05] font-extrabold tracking-[-0.03em]">
         Provably fair,{" "}
         <span className="bg-linear-to-r from-signal to-hot bg-clip-text text-transparent">
           provably yours to verify
         </span>
       </h1>
-      <p className="mx-auto mt-6 max-w-150 text-[1.3rem] leading-[1.65] text-muted">
+      <p className="mx-auto mt-6 max-w-150 text-[clamp(1.0625rem,2.6vw,1.2rem)] leading-[1.65] text-muted">
         stellarcade-sdk is the TypeScript client for TheBlockCade — games, prize
         pools, quests and tournaments on Stellar/Soroban. Every round ships with
         a commit-reveal proof you can check yourself, offline, with one function
