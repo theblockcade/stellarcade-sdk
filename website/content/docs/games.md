@@ -1,91 +1,70 @@
 # Arcade Games Catalog & Client Integration
 
-StellarCade features a catalog of on-chain, provably-fair games powered by Soroban smart contracts. This guide documents how to query available tables, place wagers, and listen for match settlements using the SDK.
+This guide documents how to query available games, request a round commitment, and play a round using `@stellarcade/sdk`.
 
 ---
 
-## Active Games Catalog
+## Game IDs
 
-| Game ID | Name | Category | Base Wager | Smart Contract | Provable Mechanism |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| `coinflip-duel` | **Coinflip Duel** | PVP / 1v1 | 5 – 100 XLM | `coin-flip` | 50/50 SHA-256 Commit-Reveal |
-| `rng-dice` | **Verifiable Dice** | Table / RNG | 10 – 250 XLM | `random-generator` | 6-Sided Modular Entropy |
-| `prizepool-gauntlet` | **Prize Pool Gauntlet** | Jackpot / Pool | 25 – 500 XLM | `prize-pool` | Multi-Stage Escrow Pool |
+The SDK's `GameId` type is the source of truth for which games exist — each corresponds to a contract in `contracts/`:
 
----
+| `GameId` | Backing Contract |
+| :--- | :--- |
+| `coin-flip` | `coin-flip` |
+| `dice-roll` | `dice-roll` |
+| `higher-lower` | `higher-lower` |
+| `number-guess` | `number-guess` |
+| `trivia` | `trivia-game` |
+| `pattern-puzzle` | `pattern-puzzle` |
 
-## Querying Games with `ApiClient`
+Which of these are actually live, in beta, or coming soon is served dynamically — don't hardcode it, call `client.games.list()`:
 
 ```typescript
-import { ApiClient } from "@stellarcade/sdk";
+const games = await client.games.list();
 
-const client = new ApiClient({
-  baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL,
+games.forEach((game) => {
+  console.log(`[${game.id}] ${game.name} — ${game.status} — ${game.minStake}–${game.maxStake} ${game.asset}`);
 });
-
-// Fetch all active games
-const result = await client.getGames();
-
-if (result.success) {
-  result.data.forEach((game) => {
-    console.log(`[${game.id}] ${game.name} - Status: ${game.status}`);
-  });
-}
 ```
 
 ---
 
-## Placing a Match Wager & Executing a Duel
+## Playing a Round
 
-To initiate a duel match:
-
-```typescript
-import { CoinFlipClient, SorobanClient, CoinFlipSide } from "@stellarcade/sdk";
-
-const soroban = new SorobanClient({
-  rpcUrl: "https://soroban-testnet.stellar.org",
-  networkPassphrase: "Test SDF Network ; September 2015",
-});
-
-const coinFlip = new CoinFlipClient({
-  client: soroban,
-  contractId: process.env.NEXT_PUBLIC_COIN_FLIP_CONTRACT_ID!,
-});
-
-// 1. Place a bet on Heads (0) with a 10 XLM wager
-const tx = await coinFlip.placeBet({
-  playerAddress: "GBZXN7PIRZGNMHGA72STUFIO",
-  wagerAmountXlm: 10,
-  side: CoinFlipSide.Heads,
-  clientSeed: "MY_RANDOM_CLIENT_SEED_99",
-});
-
-console.log("Transaction Envelope Created:", tx.xdr);
-
-// 2. Sign transaction via Freighter
-const signedXdr = await window.freighter.signTransaction(tx.xdr);
-
-// 3. Broadcast to Soroban
-const receipt = await soroban.submitTransaction(signedXdr);
-console.log("Duel Settled On-Chain! TxHash:", receipt.hash);
-```
-
----
-
-## Listening to Live Match Events
-
-Subscribe to real-time on-chain duel events using `useContractEvents`:
+Every round follows the same commit → play → settle → verify shape, regardless of game:
 
 ```typescript
-import { useContractEvents } from "@stellarcade/sdk";
+import { StellarCadeClient, FreighterConnector, createConfig, verifyProof } from "@stellarcade/sdk";
 
-const { events, isSubscribed } = useContractEvents({
-  contractId: "CDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD",
-  topic: "game_settled",
-  onEvent: (event) => {
-    console.log("New Game Settled:", event.data);
-    console.log("Winner:", event.data.winner);
-    console.log("Payout:", event.data.payoutAmount, "XLM");
-  },
+const client = new StellarCadeClient(createConfig({
+  network: "testnet",
+  gatewayUrl: "https://gateway.stellarcade.example",
+  arbiterUrl: "https://arbiter.stellarcade.example",
+  contracts: { /* ...contract addresses... */ },
+}));
+
+client.registerConnector(new FreighterConnector());
+const playerAddress = await client.connect("freighter");
+
+// 1. Request a fresh commitment BEFORE staking
+const commitment = await client.games.commitRound("coin-flip");
+
+// 2. Submit the play
+const clientSeed = crypto.randomUUID();
+const tx = await client.games.play({
+  gameId: "coin-flip",
+  playerAddress,
+  stake: "10.0000000",
+  clientSeed,
+  choice: { side: "heads" },
 });
+
+// 3. Wait for the transaction to settle
+await client.waitForTx(tx.hash);
+
+// 4. Fetch the result and verify it independently
+const result = await client.games.getResult(commitment.roundId);
+console.log("Outcome:", result.outcome, "Payout:", result.payout);
 ```
+
+See the [Fairness Spec](/fairness) for how to independently verify the round's proof once it's revealed, and the [Complete Coinflip Walkthrough](/coinflip-duel) for a fully worked example on one specific game.
