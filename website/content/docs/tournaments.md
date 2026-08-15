@@ -1,56 +1,35 @@
-# Tournaments & Bracket Battles
+# Tournaments
 
-StellarCade supports scheduled tournament brackets, high-roller invitationals, and community elimination tournaments with pooled entry fees and on-chain payout distribution.
-
----
-
-## Tournament Format & Structure
-
-Tournaments execute under single-elimination or Swiss bracket formats governed by the `prize-pool` smart contract:
-
-| Stage | Duration | Rules |
-| :--- | :--- | :--- |
-| **Registration** | 24 Hours prior | Players deposit entry fee into the tournament escrow pool |
-| **Seeding & Pairings** | 10 Minutes prior | Seedings generated deterministically from the latest Stellar ledger hash |
-| **Round Execution** | 5 Minutes per match | Players duel in best-of-3 rounds with instant commit-reveal verification |
-| **Payout Distribution** | Immediate upon final | Smart contract releases top 3 payouts automatically |
+Tournaments run on the `tournament-system` contract (**Implemented**, 906 lines, 19 tests — see [Soroban Smart Contracts](/contracts)), which handles bracket creation, joining, per-match results, and elimination/advancement. The SDK reads and enters tournaments through the gateway via `TournamentsClient` — it doesn't build bracket transactions client-side.
 
 ---
 
-## Entering and Managing Tournaments with the SDK
+## Listing and Entering
 
 ```typescript
-import { TournamentClient, SorobanClient } from "@stellarcade/sdk";
+import { StellarCadeClient, FreighterConnector, createConfig } from "@stellarcade/sdk";
 
-const soroban = new SorobanClient({
-  rpcUrl: "https://soroban-testnet.stellar.org",
-  networkPassphrase: "Test SDF Network ; September 2015",
+const client = new StellarCadeClient(createConfig({
+  network: "testnet",
+  gatewayUrl: "https://gateway.stellarcade.example",
+  arbiterUrl: "https://arbiter.stellarcade.example",
+  contracts: { /* ...contract addresses... */ },
+}));
+
+client.registerConnector(new FreighterConnector());
+const playerAddress = await client.connect("freighter");
+
+const tournaments = await client.tournaments.list();
+const active = tournaments.filter((t) => t.status === "active" || t.status === "upcoming");
+
+active.forEach((t) => {
+  console.log(`${t.tournamentId} (${t.gameId}) — ${t.status} — pool: ${t.prizePool}`);
 });
 
-const tournaments = new TournamentClient({ client: soroban });
-
-// 1. Fetch active and upcoming tournaments
-const activeTournaments = await tournaments.listTournaments({ status: "open" });
-
-const targetTournament = activeTournaments[0];
-console.log(`Tournament: ${targetTournament.title}`);
-console.log(`Entry Fee: ${targetTournament.entryFeeXlm} XLM`);
-console.log(`Total Prize Pool: ${targetTournament.totalPrizePoolXlm} XLM`);
-
-// 2. Register for tournament
-const regTx = await tournaments.buildRegisterTransaction(targetTournament.id);
-const signedReg = await window.freighter.signTransaction(regTx.xdr);
-await soroban.submitTransaction(signedReg);
-
-console.log("Successfully registered for tournament!");
+// Enter one
+const target = active[0];
+const result = await client.tournaments.enter(target.tournamentId, playerAddress);
+await client.waitForTx(result.hash);
 ```
 
----
-
-## Payout Matrix
-
-Standard tournament prize splits follow a tiered distribution curve:
-
-- **1st Place**: 60% of total pool
-- **2nd Place**: 25% of total pool
-- **3rd Place**: 15% of total pool
+`TournamentSummary` — the shape returned by both `list()` and `get(tournamentId)` — is `{ tournamentId, gameId, status, startsAtLedger, endsAtLedger, prizePool }`, where status is `"upcoming" | "active" | "finished"`. There's no `entryFeeXlm` field or fixed payout-split constant anywhere in the SDK's types; entry fees and payout distribution are configured per-tournament on the `tournament-system` contract, not fixed protocol values, and aren't currently surfaced through this client at all.
