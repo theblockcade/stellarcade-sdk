@@ -2,24 +2,25 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { DOCS_SECTIONS } from "../../lib/docs-registry";
 import { DocsNav } from "./docs-nav";
+import { MobileNav } from "./mobile-nav";
 
 export default function DocsLayout({ children }: { children: ReactNode }) {
   return (
     <div>
-      <header className="sticky top-0 z-50 flex h-16 items-center justify-between border-b border-line bg-bg/85 px-7 backdrop-blur-lg">
-        <div className="flex items-center gap-3">
+      <header className="sticky top-0 z-50 flex h-16 items-center justify-between gap-3 border-b border-line bg-bg/85 px-5 backdrop-blur-lg max-[840px]:px-4 min-[841px]:px-7">
+        <div className="flex min-w-0 items-center gap-3">
           <Link
             href="/"
             className="flex items-center gap-2.5 text-lg font-extrabold tracking-[-0.01em]"
           >
             stellarcade<span className="text-signal">-sdk</span>
           </Link>
-          <span className="rounded-sm bg-surface2 px-1.75 py-0.5 text-[0.6875rem] font-semibold uppercase tracking-wider text-muted">
+          <span className="rounded-sm bg-surface2 px-1.75 py-0.5 text-[0.6875rem] font-semibold uppercase tracking-wider text-muted max-[520px]:hidden">
             Docs
           </span>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 max-[840px]:hidden">
           <Link href="/quickstart" className="text-[13px] text-muted transition-colors hover:text-ink">
             Quickstart
           </Link>
@@ -38,6 +39,8 @@ export default function DocsLayout({ children }: { children: ReactNode }) {
             GitHub ↗
           </a>
         </div>
+
+        <MobileNav sections={DOCS_SECTIONS} />
       </header>
 
       <div className="mx-auto flex max-w-325 items-start">
