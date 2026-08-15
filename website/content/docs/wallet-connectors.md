@@ -1,24 +1,22 @@
-# Wallet Connectors & Session Management
+# Wallet Connectors
 
-`@stellarcade/sdk` provides a standardized, non-custodial session management architecture via `WalletSessionService` and `WalletProviderAdapter`.
+`@stellarcade/sdk` provides a small `WalletConnector` interface and one built-in implementation (`FreighterConnector`). There's no session-persistence service, heartbeat, or reconnect-with-backoff layer in the SDK — a connector is stateless from the SDK's point of view beyond tracking which one is currently active.
 
 ---
 
-## The `WalletProviderAdapter` Interface
+## The `WalletConnector` Interface
 
-Any Stellar wallet provider (Freighter, Albedo, Passkeys, or custom hardware wallets) can be integrated by implementing the `WalletProviderAdapter` interface:
+Any wallet provider can be integrated by implementing this interface — it never receives or stores a private key, only signs and returns XDR:
 
 ```typescript
-export interface WalletProviderAdapter {
-  isAvailable(): boolean;
-  connect(): Promise<{
-    address: string;
-    provider: WalletProviderInfo;
-    network: string;
-  }>;
-  disconnect?(): Promise<void>;
-  signMessage?(message: string): Promise<string>;
-  signTransaction?(xdr: string, opts?: { network?: string; networkPassphrase?: string }): Promise<string>;
+export interface WalletConnector {
+  readonly id: string;
+  readonly name: string;
+  isAvailable(): Promise<boolean>;
+  connect(): Promise<string>;
+  disconnect(): Promise<void>;
+  getAddress(): Promise<string | null>;
+  signTransaction(xdr: string, opts: { networkPassphrase: string }): Promise<string>;
 }
 ```
 
@@ -26,65 +24,81 @@ export interface WalletProviderAdapter {
 
 ## Connecting with Freighter
 
-`FreighterAdapter` is the official adapter for the Freighter browser extension:
+`FreighterConnector` wraps the Freighter browser extension's `window.freighterApi` — no separate package to install (see [Installation](/installation)):
 
 ```typescript
-import { FreighterAdapter, WalletSessionService } from "@stellarcade/sdk";
+import { StellarCadeClient, FreighterConnector, createConfig } from "@stellarcade/sdk";
 
-const session = new WalletSessionService({
-  sessionExpiryMs: 1000 * 60 * 60 * 24 * 7, // 7 days
-  supportedNetworks: ["TESTNET", "PUBLIC"],
-});
+const client = new StellarCadeClient(createConfig({
+  network: "testnet",
+  gatewayUrl: "https://gateway.stellarcade.example",
+  arbiterUrl: "https://arbiter.stellarcade.example",
+  contracts: { /* ...contract addresses... */ },
+}));
 
-const freighter = new FreighterAdapter();
-session.setProviderAdapter(freighter);
+client.registerConnector(new FreighterConnector());
 
-// Connect wallet
-const meta = await session.connect({ network: "TESTNET" });
-console.log("Connected:", meta.address, "on", meta.network);
-```
-
----
-
-## Managing Subscriptions & Session State
-
-`WalletSessionService` provides real-time state broadcasts for reactive user interfaces (React, Vue, or Svelte):
-
-```typescript
-const unsubscribe = session.subscribe((state, meta, error, refreshState) => {
-  console.log("Current State:", state); // DISCONNECTED | CONNECTING | CONNECTED | RECONNECTING
-  console.log("Active Address:", meta?.address);
-  console.log("Refresh Phase:", refreshState.phase);
-});
-
-// Clean up listener
-unsubscribe();
-```
-
----
-
-## Automatic Session Recovery & Heartbeat
-
-When a user returns to your application, `reconnect()` safely re-verifies session validity with exponential backoff:
-
-```typescript
 try {
-  const restoredMeta = await session.reconnect();
-  console.log("Session restored without prompting user:", restoredMeta.address);
+  const address = await client.connect("freighter");
+  console.log("Connected:", address);
 } catch (error) {
-  console.log("Session expired or rejected; prompt reconnect.");
+  console.error("Connection failed:", error);
 }
+```
+
+`client.connect(connectorId)` looks the connector up in `client.connectors`, sets it active, and calls its `connect()`. Once connected, `client.signTransaction(xdr)` delegates to whichever connector is active.
+
+---
+
+## Writing a Custom Connector
+
+Implement `WalletConnector` and register it the same way — nothing else in the SDK needs to know it isn't Freighter:
+
+```typescript
+import type { WalletConnector } from "@stellarcade/sdk";
+
+export class MyWalletConnector implements WalletConnector {
+  readonly id = "my-wallet";
+  readonly name = "My Wallet";
+  private address: string | null = null;
+
+  async isAvailable() {
+    return typeof window !== "undefined" && !!window.myWallet;
+  }
+
+  async connect() {
+    this.address = await window.myWallet.requestAddress();
+    return this.address;
+  }
+
+  async disconnect() {
+    this.address = null;
+  }
+
+  async getAddress() {
+    return this.address;
+  }
+
+  async signTransaction(xdr: string, opts: { networkPassphrase: string }) {
+    return window.myWallet.sign(xdr, opts.networkPassphrase);
+  }
+}
+
+client.registerConnector(new MyWalletConnector());
+await client.connect("my-wallet");
 ```
 
 ---
 
 ## Handling Errors
 
-`@stellarcade/sdk` provides typed errors for all wallet failure modes:
+`FreighterConnector` throws typed errors, all extending `StellarCadeError`:
 
-| Error Class | Code | Cause |
+| Situation | Error | `code` |
 | :--- | :--- | :--- |
-| `ProviderNotFoundError` | `provider_not_found` | Wallet extension is not installed in the browser |
-| `RejectedSignatureError` | `rejected_signature` | User dismissed or rejected the signature popup |
-| `StaleSessionError` | `stale_session` | Cached session exceeded expiry window |
-| `ValidationError` | `validation_error` | Unsupported network requested |
+| `window.freighterApi` isn't present | `StellarCadeError` | `FREIGHTER_NOT_FOUND` |
+| User rejects, or the extension errors, on connect | `StellarCadeError` | `FREIGHTER_CONNECT_FAILED` |
+| Signing fails | `StellarCadeError` | `FREIGHTER_SIGN_FAILED` |
+| An action needs a connected wallet and none is active | `NotConnectedError` | `NOT_CONNECTED` |
+
+See the [API Reference](/api-reference) for the full error hierarchy.
